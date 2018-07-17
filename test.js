@@ -1,9 +1,7 @@
-var person = {
-  print : function() {
-    console.log(this);
-  }
-};
+function person() {
+  
+}
 
-var p = new person;
+var p = person();
 
 console.log(p.print());
