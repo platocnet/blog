@@ -24,7 +24,7 @@ router.get('/reg', function(req, res, next) {
 router.post('/reg', function (req, res) {
   var name = req.body["name"];
   var passwd = req.body["password"];
-  var passwd_re = req.body["password-repehttp://localhost:3000/at"];
+  var passwd_re = req.body["password-repeat"];
 
   if (passwd != passwd_re) {
     req.flash("error", "密码不一致");
