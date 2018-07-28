@@ -1,17 +1,25 @@
 var router = require("express").Router();
 var crypto_mod = require("crypto");
 var user_cls = require("../models/user.js");
+var Post = require("../models/post.js");
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', {
-    title: '主页',
-    user: req.session.user,
-    error: req.flash("error").toString(),
-    success: req.flash("success").toString()
+  Post.get(null, function (err, posts) {
+    if (err) {
+      posts = [];
+    }
+    res.render('index', {
+      title: '主页',
+      user: req.session.user,
+      posts: posts,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    });
   });
 });
 
+router.get("/reg", checkNotLogin);
 router.get('/reg', function(req, res, next) {
   res.render('reg', {
     title: '注册',
@@ -21,6 +29,7 @@ router.get('/reg', function(req, res, next) {
   });
 });
 
+router.post("/reg", checkNotLogin);
 router.post('/reg', function (req, res) {
   var name = req.body["name"];
   var passwd = req.body["password"];
@@ -64,6 +73,7 @@ router.post('/reg', function (req, res) {
   });
 });
 
+router.get("/login", checkNotLogin);
 router.get('/login', function(req, res, next) {
   res.render('login', {
     title: 'login',
@@ -73,6 +83,7 @@ router.get('/login', function(req, res, next) {
   });
 });
 
+router.post("/login", checkNotLogin);
 router.post('/login', function(req, res) {
   //生成密码的 md5 值
   var md5 = crypto_mod.createHash('md5'),
@@ -95,18 +106,51 @@ router.post('/login', function(req, res) {
   });
 });
 
+router.get("/post", checkLogin);
 router.get('/post', function(req, res, next) {
-  res.render('post', { title: 'post' });
+  res.render('post', {
+    title: '发表',
+    user: req.session.user,
+    success: req.flash('success').toString(),
+    error: req.flash('error').toString()
+  });
 });
 
-router.post('/post', function(req, res, next) {
-
+router.post("/post", checkLogin);
+router.post('/post', function(req, res) {
+  var currentUser = req.session.user,
+      post = new Post(currentUser.name, req.body.title, req.body.post);
+  post.save(function (err) {
+  if (err) {
+    req.flash('error', err);
+    return res.redirect('/');
+  }
+  req.flash('success', '发布成功!');
+  res.redirect('/');//发表成功跳转到主页
+  });
 });
 
+router.get("/logout", checkLogin);
 router.get('/logout', function(req, res) {
   req.session.user = null;
   req.flash('success', '登出成功!');
   res.redirect('/');//登出成功后跳转到主页
 });
+
+function checkLogin(req, res, next) {
+  if (!req.session.user) {
+    req.flash("error", "未登录!");
+    res.redirect("/login");
+  }
+  next();
+}
+
+function checkNotLogin(req, res, next) {
+  if (req.session.user) {
+    req.flash("error", "已登录!");
+    req.redirect("back")
+  }
+  next();
+}
 
 module.exports = router;
